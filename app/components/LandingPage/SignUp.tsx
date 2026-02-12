@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -8,9 +9,11 @@ import { toast } from 'react-toastify';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import Link from 'next/link';
 import type { E164Number } from 'libphonenumber-js';
+import localforage from 'localforage';
+import { initiatePayment, checkUser } from '@/app/Services/apis';
+
 
 const SignUp: React.FC = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
   const [phone, setPhone] = useState<E164Number | undefined>();
   const [phoneError, setPhonerror] = useState('');
@@ -20,57 +23,76 @@ const SignUp: React.FC = () => {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsloading(true);
+
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
 
-    const password = formData.get('password') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
+    const phoneNumber = phone?.replace(/\s+/g, '') || '';
     const email = formData.get('email') as string;
     const companyName = formData.get('companyName') as string;
-    const phoneNumber = phone?.replace(/\s+/g, '') || '';
+    const confirmPassword = formData.get('confirmPassword') as string;
 
-    if (password !== confirmPassword) {
+    // 1. UI Validations
+    // Just one clean check for password matching
+    if (passwordValue !== confirmPassword) {
       toast.error('Passwords do not match!');
       setIsloading(false);
       return;
     }
 
-    if (phone && (!isValidPhoneNumber(phone) || phone.length > 14)) {
-      toast.error('Invalid phone number format!');
-      setIsloading(false);
-      return;
-    }
-
+    // Length check
     if (!passwordValue || passwordValue.length < 8) {
       toast.error('Password must be at least 8 characters long');
       setIsloading(false);
       return;
     }
 
-    try {
-      const response = await fetch(`${apiUrl}/check-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, phoneNumber, companyName }),
-      });
+    // Phone check
+    if (phone && (!isValidPhoneNumber(phone) || phone.length > 14)) {
+      toast.error('Invalid phone number format!');
+      setIsloading(false);
+      return;
+    }
 
-      const data = await response.json();
-      if (data.exists) {
-        toast.error(data.message);
+    try {
+      // 2. Check if user already exists
+      const userCheck = await checkUser(email, phoneNumber, companyName);
+      console.log('Full Response Object:', userCheck);
+      if (userCheck.exists) {
+        toast.error(userCheck.message);
         setIsloading(false);
         return;
       }
 
-      // Navigate to payment page with form data
-      const params = new URLSearchParams();
-      formData.forEach((value, key) => {
-        params.set(key, value.toString());
-      });
-      params.set('phoneNumber', phoneNumber);
-      router.push(`/payment?${params.toString()}`);
-    } catch (error) {
-      console.error('Error checking user:', error);
-      toast.error('An error occurred. Please try again.');
+      // 3. Get plan from localforage
+      const selectedPlan = await localforage.getItem<any>('selectedPlan');
+      if (!selectedPlan) {
+        toast.error('No plan selected. Please go back.');
+        router.push('/plans');
+        return;
+      }
+
+      // 4. Combine data
+      const registrationPayload = {
+        firstName: formData.get('firstName') as string,
+        lastName: formData.get('lastName') as string,
+        email: email,
+        companyName: companyName,
+        password: passwordValue,
+        phoneNumber: phoneNumber,
+        gender: 'Not Specified',
+        ...selectedPlan,
+      };
+
+      // 5. Initiate Payment
+      const paymentLink = await initiatePayment(registrationPayload);
+      toast.success('Registration successful! Redirecting...');
+
+      await localforage.clear();
+      window.location.href = paymentLink;
+    } catch (error: any) {
+      toast.error(error.message || 'An unexpected error occurred.');
+    } finally {
       setIsloading(false);
     }
   }
@@ -95,8 +117,7 @@ const SignUp: React.FC = () => {
     <div className="card w-full max-w-xl shadow-2xl bg-slate-900/40 backdrop-blur-md border border-white/20 text-white">
       <div className="card-body p-8 md:p-10">
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-black italic text-primary">SnameTech v2.0</h2>
-          <h4 className="text-xl font-bold">Create Account</h4>
+          <h2 className="text-3xl font-black italic text-primary">Create Account</h2>
           <p className="text-sm opacity-60">Set up your command center</p>
         </div>
 
@@ -129,7 +150,7 @@ const SignUp: React.FC = () => {
             <input
               name="companyName"
               type="text"
-              className="input input-bordered bg-white/5 border-white/10 text-white focus:border-primary"
+              className="input input-bordered bg-white/5 border-white/10 text-white focus:border-primary mx-2"
               placeholder="Sname Logistics Ltd"
               required
             />
@@ -140,7 +161,7 @@ const SignUp: React.FC = () => {
             <input
               type="email"
               name="email"
-              className="input input-bordered bg-white/5 border-white/10 text-white focus:border-primary"
+              className="input input-bordered bg-white/5 border-white/10 text-white focus:border-primary mx-2"
               placeholder="admin@company.com"
               required
             />

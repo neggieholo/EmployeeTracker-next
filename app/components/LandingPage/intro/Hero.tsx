@@ -1,5 +1,16 @@
-// app/page.tsx
+'use client'
+import { useRouter } from 'next/navigation';
+
+
+
 export default function Hero() {
+  const router = useRouter();
+
+  const handleGetStarted = () => {
+    router.push('/planspage');
+  };
+
+
   return (
     <div
       className="hero min-h-[90vh] pt-[80px] relative overflow-hidden"
@@ -54,7 +65,10 @@ export default function Hero() {
             The ultimate field-force tracking management tool. Monitor live locations and streamline
             attendance without the manual paperwork.
           </p>
-          <button className="btn btn-primary btn-lg px-12 shadow-xl shadow-primary/20">
+          <button
+            className="btn btn-primary btn-lg px-12 shadow-xl shadow-primary/20"
+            onClick={handleGetStarted}
+          >
             Get Started Now
           </button>
         </div>

@@ -27,3 +27,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Targets the country dropdown and its container */
+.custom-phone-auth .PhoneInputCountrySelect {
+    background-color: #1e293b !important; /* slate-800 */
+    color: white !important;
+}
+
+.custom-phone-auth input {
+    background: transparent !important;
+    color: white !important;
+    border: none !important;
+    outline: none !important;
+}
+
+/* Fixes the country select background when clicked */
+.PhoneInputCountrySelectContainer select {
+    background-color: #0f172a;
+    color: white;
+}
+
+/* Add this to your globals.css */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: white !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important; /* Matches slate-900 */
+  transition: background-color 5000s ease-in-out 0s;
+}

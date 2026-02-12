@@ -1,19 +1,138 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { fetchRates, selectPlanAndContinue } from '@/app/Services/apis';
+import localforage from 'localforage'; // Added to ensure cleanup
 
-// Define the PlanContainer component
 interface PlanContainerProps {
   plan: string;
   number: number;
   price: number;
   isloading: boolean;
-  payment: (plan: string) => void;
+  payment: () => void; // Fixed type: no need to pass string here if it's wrapped in the parent
   isDisabled: boolean;
 }
 
+const Planspage = () => {
+  const [empNumber, setEmpNumber] = useState('');
+  const [displayPlans, setDisplayPlans] = useState(false);
+  const [plans, setPlans] = useState<Record<string, number>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [activePlan, setActivePlan] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Clear stale data when the user lands on this page (handles back-button logic)
+  useEffect(() => {
+    const clearStaleData = async () => {
+      await localforage.removeItem('selectedPlan');
+    };
+    clearStaleData();
+  }, []);
+
+  useEffect(() => {
+    if (empNumber === '' || parseInt(empNumber) === 0) {
+      setDisplayPlans(false);
+    }
+  }, [empNumber]);
+
+  const submitEmpNumber = async () => {
+    const num = parseInt(empNumber);
+    if (!num || num <= 0) {
+      toast.error('Please enter a valid number of employees');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const fetchedPlans = await fetchRates();
+      setPlans(fetchedPlans);
+      setDisplayPlans(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load plans.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePlanSelection = async (plan: string, price: number) => {
+    const num = parseInt(empNumber);
+    const amount = price * num;
+    setActivePlan(plan);
+
+    try {
+      // 1. Await the save to localforage strictly
+      await selectPlanAndContinue({
+        plan,
+        amount,
+        empNumber: num,
+      });
+
+      // 2. Immediate route to Signup (removed timeout for better UX,
+      // but you can keep it if you want a visual pause)
+      router.push('/signup');
+    } catch (err: any) {
+      toast.error(err.message);
+      setActivePlan(null);
+    }
+  };
+
+  return (
+    <div className="w-full flex flex-col items-center gap-8 py-10">
+      {/* EMPLOYEE COUNT CARD */}
+      <div className="card w-full max-w-md shadow-2xl bg-slate-900/40 backdrop-blur-md border border-white/20 text-white">
+        <div className="card-body">
+          <label className="label-text text-white/70 mb-2 font-semibold">
+            How many employees will you be tracking?
+          </label>
+          <input
+            type="number"
+            className="input input-bordered bg-white/5 border-white/10 text-white text-2xl font-bold text-center"
+            value={empNumber}
+            onChange={(e) => setEmpNumber(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submitEmpNumber()} // Added Enter key support
+            placeholder="0"
+            required
+          />
+          <button
+            onClick={submitEmpNumber}
+            className="btn btn-primary btn-block mt-4 shadow-lg shadow-primary/20"
+            disabled={isLoading}
+          >
+            {isLoading ? <span className="loading loading-spinner"></span> : 'Confirm & View Rates'}
+          </button>
+        </div>
+      </div>
+
+      {/* PLAN SELECTION AREA */}
+      {displayPlans && (
+        <div className="w-full max-w-7xl animate-in fade-in slide-in-from-bottom-5 duration-700">
+          <h1 className="text-4xl font-black text-white text-center mb-10 italic uppercase">
+            Select Enterprise Plan
+          </h1>
+          <div className="flex flex-wrap justify-center gap-8">
+            {Object.entries(plans).map(([key, value]) => (
+              <PlanContainer
+                key={key}
+                plan={key}
+                number={parseInt(empNumber) || 0}
+                price={value}
+                isloading={activePlan === key}
+                payment={() => handlePlanSelection(key, value)}
+                isDisabled={!!activePlan}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Simplified the payment call in the child component
 const PlanContainer: React.FC<PlanContainerProps> = ({
   plan,
   number,
@@ -25,121 +144,31 @@ const PlanContainer: React.FC<PlanContainerProps> = ({
   const totalPrice = number * price;
 
   return (
-    <div className="card w-80 bg-base-100 shadow-xl border border-base-300">
-      <div className="card-body">
-        <h2 className="card-title text-2xl font-black capitalize">{plan} Plan</h2>
-        <div className="divider"></div>
-        <div className="space-y-2">
-          <p className="text-sm text-slate-600">
-            <span className="font-bold">Employees:</span> {number}
-          </p>
-          <p className="text-sm text-slate-600">
-            <span className="font-bold">Price per employee:</span> ₦{price}
-          </p>
-          <p className="text-2xl font-black text-primary">Total: ₦{totalPrice.toLocaleString()}</p>
+    <div className="card w-72 bg-slate-900/60 backdrop-blur-xl border border-white/10 text-white hover:border-primary/50 transition-all duration-300 hover:scale-105 shadow-2xl">
+      <div className="card-body items-center text-center">
+        <h2 className="card-title text-2xl font-black uppercase tracking-tighter text-primary">
+          {plan}
+        </h2>
+        <div className="divider opacity-20"></div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-4xl font-black">₦{price.toLocaleString()}</span>
+          <span className="text-white/40 text-xs uppercase tracking-widest">Per Employee</span>
         </div>
-        <div className="card-actions justify-end mt-4">
-          <button
-            className="btn btn-primary btn-block"
-            onClick={() => payment(plan)}
-            disabled={isDisabled || isloading}
-          >
-            {isloading ? <span className="loading loading-spinner"></span> : 'Select Plan'}
-          </button>
+
+        <div className="bg-white/5 w-full rounded-lg py-3 my-4 border border-white/5">
+          <p className="text-xs text-white/60 uppercase">Total for {number} Staff</p>
+          <p className="text-xl font-bold text-white">₦{totalPrice.toLocaleString()}</p>
         </div>
+
+        <button
+          className="btn btn-primary btn-block shadow-lg shadow-primary/30"
+          onClick={payment} // Simpler call
+          disabled={isDisabled || isloading}
+        >
+          {isloading ? <span className="loading loading-spinner"></span> : 'Activate Plan'}
+        </button>
       </div>
-    </div>
-  );
-};
-
-const Planspage = () => {
-  const [empNumber, setEmpNumber] = useState('');
-  const [displayPlans, setDisplayPlans] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [activePlan, setActivePlan] = useState<string | null>(null);
-
-  // Define your plans pricing
-  const plans = {
-    basic: 500,
-    standard: 750,
-    premium: 1000,
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmpNumber(e.target.value);
-  };
-
-  const submitEmpNumber = () => {
-    const num = parseInt(empNumber);
-    if (!num || num <= 0) {
-      toast.error('Please enter a valid number of employees');
-      return;
-    }
-    setIsLoading(true);
-    setTimeout(() => {
-      setDisplayPlans(true);
-      setIsLoading(false);
-    }, 500);
-  };
-
-  const processPayment = (plan: string) => {
-    setActivePlan(plan);
-    toast.info(`Processing payment for ${plan} plan...`);
-    // Add your payment processing logic here
-    setTimeout(() => {
-      toast.success(`${plan} plan selected successfully!`);
-      setActivePlan(null);
-    }, 2000);
-  };
-
-  return (
-    <div className="w-full flex flex-col items-center gap-8 py-10">
-      {/* EMPLOYEE COUNT CARD */}
-      <div className="card w-full max-w-md shadow-2xl bg-slate-900/40 backdrop-blur-md border border-white/20 text-white">
-        <div className="card-body">
-          <h2 className="text-2xl font-black mb-4">Scalability Check</h2>
-          <label className="label-text text-white/70 mb-2 font-semibold">
-            How many employees will you be tracking?
-          </label>
-          <input
-            type="number"
-            className="input input-bordered bg-white/5 border-white/10 text-white text-2xl font-bold text-center"
-            value={empNumber}
-            onChange={handleChange}
-            placeholder="0"
-            required
-          />
-          <button
-            onClick={submitEmpNumber}
-            className="btn btn-primary btn-block mt-4 shadow-lg shadow-primary/20"
-          >
-            {isLoading ? <span className="loading loading-spinner"></span> : 'Confirm & View Rates'}
-          </button>
-        </div>
-      </div>
-
-      {/* PLAN SELECTION AREA */}
-      {displayPlans && (
-        <div className="w-full max-w-7xl animate-in fade-in slide-in-from-bottom-5 duration-700">
-          <h1 className="text-4xl font-black text-white text-center mb-10">
-            Select Enterprise Plan
-          </h1>
-          <div className="flex flex-wrap justify-center gap-8">
-            {Object.entries(plans).map(([key, value]) => (
-              <PlanContainer
-                key={key}
-                plan={key}
-                number={parseInt(empNumber) || 0}
-                price={value}
-                isloading={activePlan === key}
-                payment={processPayment}
-                isDisabled={!!activePlan}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-      <ToastContainer theme="dark" position="bottom-right" />
     </div>
   );
 };
