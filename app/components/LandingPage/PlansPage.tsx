@@ -3,19 +3,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { fetchRates, selectPlanAndContinue } from '@/app/Services/apis';
-import localforage from 'localforage'; // Added to ensure cleanup
+import localforage from 'localforage'
+import { PlanContainer } from './PlansContainer';
 
-interface PlanContainerProps {
-  plan: string;
-  number: number;
-  price: number;
-  isloading: boolean;
-  payment: () => void; // Fixed type: no need to pass string here if it's wrapped in the parent
-  isDisabled: boolean;
-}
 
 const Planspage = () => {
   const [empNumber, setEmpNumber] = useState('');
@@ -132,45 +125,5 @@ const Planspage = () => {
   );
 };
 
-// Simplified the payment call in the child component
-const PlanContainer: React.FC<PlanContainerProps> = ({
-  plan,
-  number,
-  price,
-  isloading,
-  payment,
-  isDisabled,
-}) => {
-  const totalPrice = number * price;
-
-  return (
-    <div className="card w-72 bg-slate-900/60 backdrop-blur-xl border border-white/10 text-white hover:border-primary/50 transition-all duration-300 hover:scale-105 shadow-2xl">
-      <div className="card-body items-center text-center">
-        <h2 className="card-title text-2xl font-black uppercase tracking-tighter text-primary">
-          {plan}
-        </h2>
-        <div className="divider opacity-20"></div>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-4xl font-black">₦{price.toLocaleString()}</span>
-          <span className="text-white/40 text-xs uppercase tracking-widest">Per Employee</span>
-        </div>
-
-        <div className="bg-white/5 w-full rounded-lg py-3 my-4 border border-white/5">
-          <p className="text-xs text-white/60 uppercase">Total for {number} Staff</p>
-          <p className="text-xl font-bold text-white">₦{totalPrice.toLocaleString()}</p>
-        </div>
-
-        <button
-          className="btn btn-primary btn-block shadow-lg shadow-primary/30"
-          onClick={payment} // Simpler call
-          disabled={isDisabled || isloading}
-        >
-          {isloading ? <span className="loading loading-spinner"></span> : 'Activate Plan'}
-        </button>
-      </div>
-    </div>
-  );
-};
 
 export default Planspage;

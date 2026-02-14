@@ -6,15 +6,12 @@ import { useRouter } from 'next/navigation'; // Use this instead of react-router
 import { toast } from 'react-toastify';
 import localforage from 'localforage';
 import { loginAdmin } from '@/app/Services/apis';
-import { useUser } from '@/app/UserContext';
-import { AdminUser } from '@/app/Types/AdminTypes';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isloading, setIsloading] = useState(false);
   const router = useRouter();
-  const { setUser } = useUser();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +28,7 @@ export default function LoginPage() {
         void transactionId;
         void userType;
 
-        setUser(userDataToStore);
+        localforage.setItem("userData", userDataToStore);
 
         toast.success(`Welcome back, ${data.user.firstName}!`);
         router.push('/home/dashboard');
@@ -82,6 +79,14 @@ export default function LoginPage() {
               placeholder="••••••••"
               required
             />
+          </div>
+
+          <div className="flex justify-end mt-1">
+            <Link href="/forgotpassword" className="group transition-all duration-300">
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary/70 group-hover:text-primary cursor-pointer italic">
+                Forgot Password?
+              </span>
+            </Link>
           </div>
 
           <button

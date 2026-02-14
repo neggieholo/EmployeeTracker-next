@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import localforage from 'localforage';
 import { useRouter } from 'next/navigation';
 import {
   AdminUser,
@@ -12,6 +13,7 @@ import {
 } from './Types/AdminTypes';
 import { CleanClockEvent, Employee } from './Types/EmployeeTypes';
 import { fetchTodayClock, fetchSubordinates } from './Services/apis';
+import { checkSession } from './Services/apis';
 
 // Combine the basic User Profile with the Real-time Socket functionality
 interface UnifiedUserContextType extends AdminContextType {
@@ -42,39 +44,46 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   const badgeCount = notifications.length;
 
-  // useEffect(() => {
-  //   const initAuth = async () => {
-  //     const data = await checkSession();
-
-  //     if (!data.success) {
-  //       setUser(null);
-  //       setSessionId(null);
-  //       // Only redirect if we are trying to access protected pages
-  //       if (window.location.pathname.startsWith('/home')) {
-  //         router.push('/');
-  //       }
-  //     } else {
-  //       // Success: Set user and wake up socket
-  //       const { _id, userType, transactionId, ...profileData } = data.user;
-  //       void _id;
-  //       void userType;
-  //       void transactionId;
-
-  //       setUser(profileData);
-  //       setUserName(profileData.firstName);
-  //       setSessionId('active');
-  //     }
-  //     setIsLoading(false);
-  //   };
-
-  //   initAuth();
-  // }, [router]);
-
-  // --- Socket Logic ---
-  
+  // --- Rehydrate User from localforage ---
   useEffect(() => {
-    
-    const newSocket = io('http://192.168.8.194:3060', {
+    const loadUser = async () => {
+      try {
+        const storedUser = await localforage.getItem<AdminUser>('userData');
+        if (storedUser) {
+          setUser(storedUser);
+          console.log('Persistence: User reloaded from localforage');
+        }
+      } catch (err) {
+        console.error('Failed to load user from storage:', err);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  useEffect(() => {
+    async function cSessionCheck() {
+      try {
+        const res = await checkSession();
+
+        // Changed res.ok to res.success
+        if (!res.success) {
+          console.warn('Session invalid, redirecting...');
+          window.location.replace('/');
+        } else {
+          console.log('Session verified for:', res.user?.firstName);
+        }
+      } catch (err) {
+        console.error('Session check failed:', err);
+        window.location.replace('/');
+      }
+    }
+
+    cSessionCheck();
+  }, []); // Note: Fixed the bracket syntax here as well
+
+  useEffect(() => {
+    const newSocket = io('http://localhost:3060', {
       path: '/api/socket.io',
       withCredentials: true,
       autoConnect: true,
@@ -90,7 +99,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     //   }));
     // });
 
+    newSocket.on('notification_deleted', (id: string) => {
+      console.log('notification deleted');
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+    });
+
     newSocket.on('user_location', (data) => {
+      console.log('📍 Received location:', data);
       console.log(`📍 Received location for ${data.user}`);
 
       setWorkerLocations((prev) => {
@@ -129,7 +144,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       });
     });
 
-
     newSocket.on('messages', (data) => {
       setNotifications((prev) => {
         const incoming = Array.isArray(data) ? data : [data];
@@ -156,9 +170,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   const deleteAll = () => socketRef.current?.emit('delete_all_notifications');
 
-  
   useEffect(() => {
-
     const performFetch = async () => {
       console.log('🔄 Background Polling: Fetching Clock Events...');
       const data = await fetchTodayClock();
@@ -208,10 +220,44 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
         setUnclockedList(unclocked);
       }
-    }
+    };
 
     SetOffUnclocked();
   }, [employees, onlineMembers, clockEvents]);
+
+  useEffect(() => {
+    // 1. Initial check: if no workers, don't even start the interval
+    if (!workerLocations || Object.keys(workerLocations).length === 0) return;
+
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      const expiryLimit = 12 * 1000; // 12 seconds
+      let hasChanged = false;
+
+      setWorkerLocations((prev) => {
+        const updated = { ...prev };
+
+        for (const [name, data] of Object.entries(updated)) {
+          // Handle both Number (local) and ISO String (server) formats
+          const lastSeen =
+            typeof data.timestamp === 'number' ? data.timestamp : Date.parse(data.timestamp); // Date.parse is faster for ISO strings
+
+          // Check for invalid dates or staleness
+          if (isNaN(lastSeen) || now - lastSeen > expiryLimit) {
+            console.log(
+              `🧹 Removing ${name}: ${isNaN(lastSeen) ? 'Invalid timestamp' : `Stale by ${Math.round((now - lastSeen) / 1000)}s`}`
+            );
+            delete updated[name];
+            hasChanged = true;
+          }
+        }
+
+        return hasChanged ? updated : prev;
+      });
+    }, 5000); // Heartbeat check every 5 seconds
+
+    return () => clearInterval(cleanupInterval);
+  }, [workerLocations]);
 
   return (
     <UserContext.Provider
@@ -235,7 +281,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       {children}
     </UserContext.Provider>
   );
-};
+};;
 
 export const useUser = () => {
   const context = useContext(UserContext);

@@ -37,7 +37,6 @@ export default interface NetworkError {
   };
 }
 
-
 // This matches the format expected by your Profile/Detail view
 export type EmployeeProfile = {
   Name: string;
@@ -65,4 +64,12 @@ export interface EmployeeApiResponse {
   success: boolean;
   employees: Employee[];
   error?: string;
+}
+
+
+// 1. Define the shape of the raw API response
+export interface ClockEventsApiResponse {
+  success: boolean;
+  clockEvents: EmployeeClockEvent[];
+  message?: string;
 }

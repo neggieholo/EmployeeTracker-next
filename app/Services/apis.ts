@@ -2,9 +2,21 @@
 // import { AdminUser } from '../Types';
 import localforage from 'localforage';
 import { LoginResponse, RegistrationPayload } from '../Types/AdminTypes';
-import { CleanClockEvent, EmployeeApiResponse, Employee } from '../Types/EmployeeTypes';
+import {
+  EmployeeApiResponse,
+  Employee,
+  ClockEventsApiResponse,
+  EmployeeClockEvent,
+  CleanClockEvent,
+} from '../Types/EmployeeTypes';
+import { toast } from 'react-toastify';
 
-const BASE_URL = 'http://192.168.8.194:3060/api';
+const BASE_URL = 'http://localhost:3060/api';
+
+interface ClockData {
+  clockedInEvents: EmployeeClockEvent[];
+  clockedOutEvents: EmployeeClockEvent[];
+}
 
 export const loginAdmin = async (email: string, password: string): Promise<LoginResponse> => {
   const response = await fetch(`${BASE_URL}/admin/login`, {
@@ -15,7 +27,6 @@ export const loginAdmin = async (email: string, password: string): Promise<Login
   });
 
   const data: LoginResponse = await response.json();
-  console.log('User:', data.user);
   return data;
 };
 
@@ -92,102 +103,87 @@ export const initiatePayment = async (payload: RegistrationPayload): Promise<str
   }
 };
 
-export const fetchTodayClock = async () => {
+export const fetchTodayClock = async (): Promise<ClockData> => {
   try {
     const response = await fetch(`${BASE_URL}/records/get-clock-events`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
     });
 
     const data = await response.json();
-    console.log("📜 Clock Events Response:", data);
 
     if (!data.success || !Array.isArray(data.clockEvents)) {
-      console.error("❌ Invalid response format:", data);
       return { clockedInEvents: [], clockedOutEvents: [] };
     }
 
-    const events = data.clockEvents;
+    const events: EmployeeClockEvent[] = data.clockEvents;
 
-    // 🔹 Determine today's date (YYYY-MM-DD)
     const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    const todayStr = `${yyyy}-${mm}-${dd}`;
+    const todayStr = today.toISOString().split('T')[0]; // Simpler way to get YYYY-MM-DD
 
-    // 🔹 Filter events for today
     const filteredEvents = events.filter((event) => {
-      if (!event.clockInTime) return false; // Skip if missing
-
-      const eventDate = new Date(event.clockInTime);
-      const eventDateStr = `${eventDate.getFullYear()}-${String(
-        eventDate.getMonth() + 1
-      ).padStart(2, "0")}-${String(eventDate.getDate()).padStart(2, "0")}`;
-
-      return eventDateStr === todayStr;
+      if (!event.clockInTime) return false;
+      return event.clockInTime.split('T')[0] === todayStr;
     });
 
-    // 🔹 Sort oldest → newest by clockInTime
+    // TypeScript Fix: use .getTime() for subtraction
     filteredEvents.sort(
-      (a, b) => new Date(a.clockInTime) - new Date(b.clockInTime)
+      (a, b) => new Date(a.clockInTime).getTime() - new Date(b.clockInTime).getTime()
     );
 
-    // 🔹 Split by status
-    const clockedInEvents = filteredEvents.filter((e) => e.status === "clocked in");
-    const clockedOutEvents = filteredEvents.filter((e) => e.status === "clocked out");
-
-    console.log("🟢 Clocked In:", clockedInEvents);
-    console.log("🔴 Clocked Out:", clockedOutEvents);
-
-    return { clockedInEvents, clockedOutEvents };
+    return {
+      clockedInEvents: filteredEvents.filter((e) => e.status === 'clocked in'),
+      clockedOutEvents: filteredEvents.filter((e) => e.status === 'clocked out'),
+    };
   } catch (error) {
-    console.error("❌ Error fetching clock events:", error);
+    console.error('❌ Error:', error);
     return { clockedInEvents: [], clockedOutEvents: [] };
   }
 };
 
-export async function fetchRecentEvents() {
-    try {
-        const response = await fetch(`${BASE_URL}/records/get-recent-events`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: 'include'
-        });
+export async function fetchRecentEvents(): Promise<EmployeeClockEvent[]> {
+  try {
+    const response = await fetch(`${BASE_URL}/records/get-recent-events`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
 
-        const data = await response.json();
-        console.log("📜 Clock Events Response:", data);
+    // 2. Cast the JSON response to our interface
+    const data: ClockEventsApiResponse = await response.json();
 
-        if (!data.success || !Array.isArray(data.clockEvents)) {
-            console.error("❌ Invalid response format:", data);
-            return [];
-        }
+    console.log('📜 Clock Events Response:', data);
 
-        // 🔹 Define today's start and tomorrow's start
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-
-        // 🔹 Filter events that are today
-        let events = data.clockEvents.filter(event => {
-            if (!event.clockInTime) return false;
-
-            const clockIn = new Date(event.clockInTime);
-            return clockIn >= today && clockIn < tomorrow;
-        });
-
-        // 🔹 Sort newest → oldest based on clockInTime
-        events.sort((a, b) => new Date(b.clockInTime) - new Date(a.clockInTime));
-
-        console.log('Events', events);
-        return events;
-    } catch (error) {
-        console.error("❌ Error fetching clock events:", error);
-        return [];
+    if (!data.success || !Array.isArray(data.clockEvents)) {
+      console.error('❌ Invalid response format:', data);
+      return [];
     }
+
+    // 3. Define today's time boundaries
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    // 4. Filter and Type-check events
+    const events = data.clockEvents
+      .filter((event: EmployeeClockEvent) => {
+        if (!event.clockInTime) return false;
+
+        const clockIn = new Date(event.clockInTime);
+        return clockIn >= today && clockIn < tomorrow;
+      })
+      // 5. Sort newest first
+      .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime());
+
+    console.log('Processed Events:', events);
+    return events;
+  } catch (error) {
+    console.error('❌ Error fetching clock events:', error);
+    return [];
+  }
 }
 
 export const checkSession = async (): Promise<LoginResponse> => {
@@ -207,13 +203,14 @@ export const checkSession = async (): Promise<LoginResponse> => {
 };
 
 export const fetchSubordinates = async (
-  role: 'admin' | 'manager' = 'admin'
+  role: 'admin' | 'manager' = 'admin',
+  id: string = ''
 ): Promise<Employee[]> => {
   try {
     const response = await fetch(`${BASE_URL}/subordinates`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({ role, managerId: id }),
       credentials: 'include',
     });
 
@@ -228,5 +225,369 @@ export const fetchSubordinates = async (
   } catch (error) {
     console.error('❌ Fetch error:', error);
     return [];
+  }
+};
+
+interface DeleteWorkerProps {
+  userId: string;
+  role: string;
+  refresher: () => void;
+}
+
+export const DeleteWorker = async ({ userId, role, refresher }: DeleteWorkerProps) => {
+  const deleteData = {
+    userID: userId,
+    role: role,
+  };
+
+  try {
+    const response = await fetch(`${BASE_URL}/subordinates/delete`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(deleteData),
+      credentials: 'include',
+    });
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('❌ Error deleting user account:', error);
+    toast.error('Error deleting user. Please try again.');
+  }
+};
+
+export const changeAdminPassword = async (payload: {
+  currentPassword: string;
+  newPassword: string;
+}) => {
+  try {
+    const response = await fetch(`${BASE_URL}/admin/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      credentials: 'include',
+    });
+
+    return await response.json();
+  } catch (error) {
+    console.error('❌ Change Password Error:', error);
+    throw error;
+  }
+};
+
+export const getAdminProfile = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/admin/profile`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    throw error;
+  }
+};
+
+export const setMapCoordinates = async (coords: { latitude: string; longitude: string }) => {
+  try {
+    const response = await fetch(`${BASE_URL}/records/set-mapCoords`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(coords),
+      credentials: 'include',
+    });
+
+    return await response.json();
+  } catch (error) {
+    console.error('Request failed', error);
+    throw error;
+  }
+};
+
+export async function getMapCoords() {
+  try {
+    const response = await fetch(`${BASE_URL}/records/retrieve-mapCoords`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.coordinates;
+    } else {
+      const errorData = await response.json();
+      console.error('Error retrieving coordinates:', errorData.error);
+      return null;
+    }
+  } catch (error) {
+    console.error('Network error:', error);
+    return null;
+  }
+}
+
+export async function DeleteAccount(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await fetch(`${BASE_URL}/subordinates/delete-account`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { success: false, message: data.error || 'Delete failed' };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export const initiateUpgradePayment = async (payload: {
+  email: string;
+  plan: string;
+  amount: number;
+  empNumber: number;
+}) => {
+  const response = await fetch(`${BASE_URL}/payment/upgrade-payment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    credentials: 'include',
+  });
+  return await response.json();
+};
+
+export const logOut = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/logout`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    await localforage.clear();
+
+    if (data.success) {
+      toast.success(data.message || 'Logged out successfully.');
+      return true;
+    }
+    toast.warn('Session cleared.');
+    return true;
+  } catch (err) {
+    console.error('Logout failed:', err);
+    await localforage.clear();
+    return true; // Return true anyway to force redirect on frontend
+  }
+};
+
+/**
+ * Initiates a password reset for the admin
+ */
+export const forgotPasswordAdmin = async (email: string) => {
+  try {
+    const response = await fetch(`${BASE_URL}/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, role: 'admin' }),
+      credentials: 'include',
+    });
+
+    return await response.json();
+  } catch (error) {
+    console.error('API Error (forgotPassword):', error);
+    throw new Error('Server unreachable. Please check your connection.');
+  }
+};
+
+/**
+ * Finalizes the password reset with the new credentials
+ */
+export const resetPasswordAdmin = async (payload: {
+  token: string;
+  password: string;
+  role: string;
+  userId: string;
+}) => {
+  try {
+    const response = await fetch(`${BASE_URL}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'include',
+    });
+
+    return await response.json();
+  } catch (error) {
+    console.error('API Error (resetPassword):', error);
+    throw new Error('Network error during password reset.');
+  }
+};
+
+/**
+ * Helper to strip internal DB fields and return a CleanClockEvent
+ */
+const cleanEvent = (event: EmployeeClockEvent): CleanClockEvent => {
+  const { __v, adminId, managerId, ...clean } = event;
+  return clean;
+};
+
+export async function initialRecords(): Promise<CleanClockEvent[]> {
+  try {
+    const response = await fetch(`${BASE_URL}/records/get-clock-events`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+
+    if (!data.success || !Array.isArray(data.clockEvents)) return [];
+
+    // Clean and Sort (Newest First)
+    return (data.clockEvents as EmployeeClockEvent[])
+      .map(cleanEvent)
+      .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime());
+  } catch (error) {
+    console.error('❌ Error fetching initial records:', error);
+    return [];
+  }
+}
+
+export const fetchSearchData = async (
+  startDate: string,
+  endDate: string,
+  name: string
+): Promise<CleanClockEvent[]> => {
+  try {
+    const requestBody: any = {};
+
+    if (startDate || endDate) {
+      requestBody.dateQuery = startDate === endDate ? { startDate } : { startDate, endDate };
+    }
+
+    if (name?.trim()) {
+      requestBody.name = name.trim();
+    }
+
+    const response = await fetch(`${BASE_URL}/records/search-clock-events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    if (!data.success || !Array.isArray(data.clockEvents)) return [];
+
+    return (data.clockEvents as EmployeeClockEvent[])
+      .map(cleanEvent)
+      .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime());
+  } catch (error) {
+    console.error('❌ Error fetching search data:', error);
+    return [];
+  }
+};
+
+export const fetchWorkerData = async (id: string): Promise<CleanClockEvent[]> => {
+  try {
+    const response = await fetch(`${BASE_URL}/records/get-sub-events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id }),
+    });
+
+    const data = await response.json();
+    if (!data.success || !Array.isArray(data.clockEvents)) return [];
+
+    return (data.clockEvents as EmployeeClockEvent[])
+      .map(cleanEvent)
+      .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime());
+  } catch (error) {
+    console.error('❌ Error fetching search data:', error);
+    return [];
+  }
+};
+
+// The base shape of a single coordinate point
+export interface TimelineEntry {
+  displayName: string;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+}
+
+// A helper type for the UI: An object where keys are names and values are arrays of points
+export type GroupedTimelines = Record<string, { lat: number; lon: number; label: string }[]>;
+
+// Reusable Grouper Function
+const groupTimelineData = (results: TimelineEntry[]): GroupedTimelines => {
+  const grouped: GroupedTimelines = {};
+
+  results.forEach(({ displayName, latitude, longitude, timestamp }) => {
+    // 1. If 'John' doesn't have a bucket yet, create one
+    if (!grouped[displayName]) grouped[displayName] = [];
+    
+    // 2. Add this specific point to 'John's' bucket only
+    grouped[displayName].push({
+      lat: latitude,
+      lon: longitude,
+      label: timestamp,
+    });
+  });
+
+  return grouped;
+};
+
+export const fetchTodaysTimelines = async (): Promise<GroupedTimelines | null> => {
+  try {
+    const response = await fetch(`${BASE_URL}/records/todays-timelines`);
+    const data = await response.json();
+    return data.success ? groupTimelineData(data.timelineResults) : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const fetchFilteredMaps = async (
+  startDate: string,
+  endDate?: string
+): Promise<GroupedTimelines | null> => {
+  try {
+    const requestBody = {
+      dateQuery: {
+        startDate,
+        endDate: endDate || startDate,
+      },
+    };
+
+    const response = await fetch(`${BASE_URL}/records/search-map-dates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+
+    const data = await response.json();
+    if (data.success && Array.isArray(data.mapSearchResults)) {
+      return groupTimelineData(data.mapSearchResults);
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ Error fetching filtered map events:', error);
+    return null;
   }
 };
