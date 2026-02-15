@@ -102,9 +102,12 @@ export function EmployeesDisplay({ eventList, isLoading, name, refresher }: Empl
                 </h3>
               </div>
             ) : (
-              <h1 className="text-3xl font-black text-slate-800 uppercase italic tracking-tighter">
-                Employees <span className="text-primary">List</span>
-              </h1>
+              <div className='flex gap-2'>
+                <Users size={32} className="shrink-0 text-primary" />
+                <h1 className="text-2xl font-black text-slate-800 uppercase italic tracking-tighter">
+                  Employees <span className="text-primary">List</span>
+                </h1>
+              </div>
             )}
           </div>
 

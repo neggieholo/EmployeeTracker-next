@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @plugin "daisyui" {
-   themes: lemonade --default, night --prefersdark;
+   themes: lemonade --default;
  }
 
 :root {
@@ -54,4 +54,17 @@ input:-webkit-autofill:focus {
   -webkit-text-fill-color: white !important;
   -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important; /* Matches slate-900 */
   transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Fix for Leaflet tile rendering */
+.leaflet-container img.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* Ensure the container is visible */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #f8fafc; /* Match your slate-50 background */
 }

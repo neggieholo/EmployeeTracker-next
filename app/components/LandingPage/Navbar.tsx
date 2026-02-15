@@ -11,7 +11,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar bg-black text-white backdrop-blur-md fixed top-0 w-full z-100 border-b border-base-200 px-4 md:px-12 h-[80px]">
+    <nav className="navbar bg-primary text-white backdrop-blur-md fixed top-0 w-full z-100 border-b border-base-200 px-4 md:px-12 h-[80px]">
       {/* LEFT SIDE: Brand & Logo */}
       <div className="navbar-start">
         {/* Mobile Dropdown for small screens */}
@@ -68,13 +68,13 @@ const Navbar = () => {
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1 gap-2 font-semibold">
           <li>
-            <a className="hover:text-primary transition-colors">Product</a>
+            <a className="transition-colors">Product</a>
           </li>
           <li>
-            <a className="hover:text-primary transition-colors">Pricing</a>
+            <a className="transition-colors">Pricing</a>
           </li>
           <li>
-            <a className="hover:text-primary transition-colors">About Us</a>
+            <a className="transition-colors">About Us</a>
           </li>
         </ul>
       </div>
@@ -82,7 +82,7 @@ const Navbar = () => {
       {/* RIGHT SIDE: Action Button */}
       <div className="navbar-end">
         <button
-          className="btn btn-primary btn-sm md:btn-md shadow-lg shadow-primary/20"
+          className="btn bg-primary-content text-primary btn-sm md:btn-md shadow-lg shadow-primary/20"
           onClick={handleGetStarted}
         >
           Admin Portal

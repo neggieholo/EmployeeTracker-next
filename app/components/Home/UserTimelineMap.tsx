@@ -1,13 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import leafletImage from 'leaflet-image';
-import reverseGeocode from '../fetchers/reverseGeocode';
 import { jsPDF } from 'jspdf';
-import { Download, Map as MapIcon, FileText, MapPin, Navigation } from 'lucide-react';
+import { Download, FileText, MapPin, Navigation } from 'lucide-react';
+import { GroupedTimelines } from '@/app/Services/apis';
 
 // Fix for Leaflet icons in Next.js
 const DefaultIcon = L.icon({
@@ -19,21 +19,41 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+/**
+ * Component to force map to recalculate size and show tiles properly
+ */
+const ResizeMap = () => {
+  const map = useMap();
+  useEffect(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+  }, [map]);
+  return null;
+};
+
 const MapDownloader = ({ userId }: { userId: string }) => {
   const map = useMap();
 
-  const handleDownload = () => {
-    leafletImage(map, (err, canvas) => {
-      if (err) return console.error(err);
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = `Map_${userId}.png`;
-      link.click();
-    });
+  const handleDownload = async () => {
+    try {
+      // Dynamic import to bypass declaration errors and handle missing types
+      const { default: lImage } = await import('leaflet-image' as any);
+
+      lImage(map, (err: any, canvas: HTMLCanvasElement) => {
+        if (err) return console.error(err);
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `Map_${userId}.png`;
+        link.click();
+      });
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
   };
 
   return (
-    <div className="absolute top-4 right-4 z-[1000]">
+    <div className="absolute top-4 right-4 z-1000">
       <button
         onClick={handleDownload}
         className="btn btn-primary btn-sm shadow-xl flex items-center gap-2 normal-case"
@@ -45,14 +65,22 @@ const MapDownloader = ({ userId }: { userId: string }) => {
   );
 };
 
-const UserTimelineMap = ({ userId, timeline }: { userId: string; timeline: any[] }) => {
-  const [addresses, setAddresses] = useState<string[]>([]);
+interface UserTimelineMapProps {
+  userId: string;
+  timeline: GroupedTimelines[string];
+}
 
+const UserTimelineMap = ({ userId, timeline }: UserTimelineMapProps) => {
   const latLngs = useMemo(
     () => timeline.map((p) => [p.lat, p.lon] as [number, number]),
     [timeline]
   );
-  const center = latLngs[0] || [0, 0];
+
+  const center = useMemo(() => latLngs[0] || [0, 0], [latLngs]);
+
+  useEffect(() => {
+    console.log('Timelines:', timeline);
+  },[timeline]);
 
   const handleDownloadPDF = () => {
     if (!timeline.length) return;
@@ -69,69 +97,58 @@ const UserTimelineMap = ({ userId, timeline }: { userId: string; timeline: any[]
       doc.setFontSize(10);
       doc.text(`${i + 1}. ${new Date(point.label).toLocaleString()}`, 15, y);
       doc.setFontSize(8);
-      doc.text(`Location: ${addresses[i] || 'Searching...'}`, 20, y + 5);
+      doc.text(`Location: ${point.address || 'No address provided'}`, 20, y + 5);
       y += 12;
     });
     doc.save(`Timeline_${userId}.pdf`);
   };
 
-  useEffect(() => {
-    const fetchAllAddresses = async () => {
-      const results = await Promise.all(
-        timeline.map(async (p) => {
-          try {
-            return (await reverseGeocode(p.lat, p.lon)) || 'Unknown Location';
-          } catch {
-            return 'Geocode Failed';
-          }
-        })
-      );
-      setAddresses(results);
-    };
-    if (timeline.length) fetchAllAddresses();
-  }, [timeline]);
-
   if (!timeline.length) return null;
 
   return (
-    <div className="card bg-base-100 border border-base-300 shadow-sm overflow-hidden mb-8">
+    <div className="card bg-base-100 border border-base-300 shadow-sm overflow-y-auto mb-8">
       {/* Header */}
       <div className="bg-base-200 px-6 py-4 flex justify-between items-center border-b border-base-300">
         <div className="flex items-center gap-3">
           <div className="avatar placeholder">
-            <div className="bg-primary text-primary-content rounded-full w-10">
+            <div className="bg-primary text-primary-content rounded-full w-10 flex justify-center items-center">
               <span className="text-lg font-bold">{userId[0].toUpperCase()}</span>
             </div>
           </div>
           <div>
             <h3 className="text-sm font-black uppercase tracking-tight">{userId}</h3>
-            <span className="text-[10px] opacity-60 font-bold uppercase italic">
-              Tracking Active
-            </span>
           </div>
         </div>
-        <button onClick={handleDownloadPDF} className="btn btn-outline btn-secondary btn-xs gap-2">
+        <button
+          onClick={handleDownloadPDF}
+          className="btn btn-xs gap-2 border-red-600 text-red-600 bg-transparent hover:bg-red-600 hover:text-white hover:border-red-600 border-2"
+        >
           <FileText size={12} />
           Export PDF
         </button>
       </div>
 
-      {/* Map Section */}
-      <div className="relative h-[350px] w-full bg-slate-200">
+      {/* Map Section - Use bracket notation for exact pixel height */}
+      <div className="relative h-112.5 w-full bg-slate-100">
         <MapContainer
           center={center}
           zoom={14}
           scrollWheelZoom={false}
-          className="h-full w-full"
+          style={{ height: '100%', width: '100%' }}
+          className="z-0"
           attributionControl={false}
         >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {/* THE FIX: Use the CartoDB tiles from your LiveMap component */}
+          <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+          <ResizeMap />
           {timeline.map((p, i) => (
             <Marker key={i} position={[p.lat, p.lon]} />
           ))}
+
           {latLngs.length > 1 && (
             <Polyline positions={latLngs} color="#570df8" weight={4} dashArray="5, 10" />
           )}
+
           <MapDownloader userId={userId} />
         </MapContainer>
       </div>
@@ -145,7 +162,7 @@ const UserTimelineMap = ({ userId, timeline }: { userId: string; timeline: any[]
           </span>
         </div>
 
-        <div className="max-h-[200px] overflow-y-auto rounded-xl border border-base-200 bg-slate-50">
+        <div className="max-h-64 overflow-y-auto rounded-xl border border-base-200 bg-slate-50">
           <ul className="divide-y divide-base-200">
             {timeline.map((point, index) => (
               <li
@@ -160,9 +177,9 @@ const UserTimelineMap = ({ userId, timeline }: { userId: string; timeline: any[]
                       minute: '2-digit',
                     })}
                   </span>
-                  <span className="text-xs font-medium text-slate-800 flex items-center gap-1">
-                    <MapPin size={12} className="text-error" />
-                    {addresses[index] || <span className="loading loading-dots loading-xs"></span>}
+                  <span className="text-xs font-medium text-slate-800 flex items-center gap-1 leading-tight">
+                    <MapPin size={12} className="text-error shrink-0" />
+                    {point.address}
                   </span>
                 </div>
               </li>

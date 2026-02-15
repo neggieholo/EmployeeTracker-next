@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import TimelineMapViewer from '../components/TimelineMapViewer';
-import TimelineMapControls from '../components/TimelineMapControls';
-import { fetchTodaysTimelines, fetchFilteredMaps, GroupedTimeline } from '@/app/Services/apis';
+import UserTimelineMap from './UserTimelineMap';
+import TimelineMapControls from './TimelineControls';
+import { fetchTodaysTimelines, fetchFilteredMaps, GroupedTimelines } from '@/app/Services/apis';
 import { toast } from 'react-toastify';
-import { Map as MapIcon, Calendar, Search, MapPin } from 'lucide-react';
+import { Map as MapIcon, Search} from 'lucide-react';
 
 const MapTimelines = () => {
-  const [userTimelines, setUserTimelines] = useState<GroupedTimeline>({});
+  const [userTimelines, setUserTimelines] = useState<GroupedTimelines>({});
   const [searchValue, setSearchValue] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -26,7 +26,7 @@ const MapTimelines = () => {
   }, []);
 
   // Filter logic (Memoized for performance)
-  const filteredTimelines = useMemo(() => {
+  const filteredTimelines : GroupedTimelines = useMemo(() => {
     if (!searchValue) return userTimelines;
 
     const search = searchValue.toLowerCase();
@@ -59,11 +59,11 @@ const MapTimelines = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 min-h-full bg-base-100">
+    <div className="flex flex-col gap-6 p-6 min-h-full bg-white h-[calc(100vh-100px)]">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter flex items-center gap-2">
+          <h1 className="text-2xl font-black uppercase italic tracking-tighter flex items-center gap-2">
             <MapIcon className="text-primary" size={32} />
             Route <span className="text-primary">Timelines</span>
           </h1>
@@ -84,22 +84,19 @@ const MapTimelines = () => {
       {/* Stats Summary */}
       <div className="stats shadow bg-base-200 w-full md:w-fit">
         <div className="stat">
-          <div className="stat-title font-bold text-xs uppercase italic">Active Routes</div>
+          <div className="stat-title font-bold text-xs uppercase italic">Present Routes</div>
           <div className="stat-value text-primary text-2xl">
             {Object.keys(filteredTimelines).length}
           </div>
-          <div className="stat-desc font-medium">Tracking employees in field</div>
+          <div className="stat-desc font-medium">Employees&apos; routes history in field</div>
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="rounded-3xl border border-base-300 bg-base-100 min-h-[400px] overflow-hidden">
+      <div className="rounded-3xl border border-base-300 bg-base-100 min-h-100 flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <span className="loading loading-infinity loading-lg text-primary"></span>
-            <p className="text-xs font-black uppercase tracking-widest animate-pulse">
-              Syncing Map Data...
-            </p>
+          <div className="flex justify-center py-20">
+            <span className="loading loading-ring loading-lg text-primary"></span>
           </div>
         ) : Object.keys(filteredTimelines).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 opacity-20">
@@ -111,12 +108,12 @@ const MapTimelines = () => {
             {Object.keys(filteredTimelines).map((uid) => (
               <div key={uid} className="card bg-base-200 shadow-sm border border-base-300">
                 <div className="card-body p-4">
-                  <h2 className="card-title text-sm font-black uppercase flex items-center gap-2 mb-2">
+                  {/* <h2 className="card-title text-sm font-black uppercase flex items-center gap-2 mb-2">
                     <MapPin size={16} className="text-secondary" />
                     {uid}
-                  </h2>
-                  <div className="h-[400px] rounded-2xl overflow-hidden border-2 border-base-300">
-                    <TimelineMapViewer userId={uid} timeline={filteredTimelines[uid]} />
+                  </h2> */}
+                  <div className="h-100 rounded-2xl overflow-y-auto border-2 border-base-300">
+                    <UserTimelineMap userId={uid} timeline={filteredTimelines[uid]} />
                   </div>
                 </div>
               </div>

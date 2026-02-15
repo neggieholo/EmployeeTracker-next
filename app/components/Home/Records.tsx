@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { RecordsDisplay } from './RecordsDisplay';
 import { initialRecords } from '@/app/Services/apis';
 import { CleanClockEvent } from '@/app/Types/EmployeeTypes';
+import { FileText } from 'lucide-react';
 
 const Records = () => {
   const [eventList, setEventList] = useState<CleanClockEvent[]>([]);
@@ -28,9 +29,12 @@ const Records = () => {
     <main className="bg-slate-50/50 p-4 h-[calc(100vh-100px)] flex flex-col">
       <div className="">
         <header className="mb-3">
-          <h1 className="text-3xl font-black text-slate-800 uppercase italic tracking-tighter">
-            System <span className="text-primary">Audit Logs</span>
-          </h1>
+          <div className="flex gap-2 items-center">
+            <FileText size={32} className="shrink-0 text-primary" />
+            <h1 className="text-2xl font-black text-slate-800 uppercase italic tracking-tighter">
+              System <span className="text-primary">Audit Logs</span>
+            </h1>
+          </div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
             Employee Records
           </p>

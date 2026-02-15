@@ -30,8 +30,8 @@ const Sidebar = () => {
     }
   };
 
-  const getLinkStyle = (path: string) => {
-    const isActive = pathname === path;
+  const getLinkStyle = (path: string, partial = false) => {
+    const isActive = partial ? pathname.startsWith(path) : pathname === path;
     return `flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group ${
       isActive
         ? 'bg-primary text-primary-content shadow-lg font-bold scale-[1.02]'
@@ -54,7 +54,9 @@ const Sidebar = () => {
       </button>
 
       {/* LOGO SECTION */}
-      <div className={`h-32 flex items-center shrink-0 bg-white ${isCollapsed ? 'justify-center' : 'px-8'}`}>
+      <div
+        className={`h-32 flex items-center shrink-0 bg-white ${isCollapsed ? 'justify-center' : 'px-8'}`}
+      >
         <div className={`relative h-12 ${isCollapsed ? 'w-12' : 'w-48'}`}>
           <Image src="/empt_tracker_logo.png" alt="Logo" fill priority className="object-contain" />
         </div>
@@ -73,7 +75,7 @@ const Sidebar = () => {
           </li>
 
           <li>
-            <Link href="/home/livemap" className={getLinkStyle('/home/live-location')}>
+            <Link href="/home/livemap" className={getLinkStyle('/home/livemap')}>
               <MapPin size={24} className="shrink-0" />
               {!isCollapsed && (
                 <span className="text-sm font-black uppercase tracking-widest">Live Map</span>
@@ -82,38 +84,56 @@ const Sidebar = () => {
           </li>
 
           {/* EMPLOYEES DROPDOWN */}
+          {/* EMPLOYEES DROPDOWN */}
           <li>
             {isCollapsed ? (
-              <Link href="/home/employees/list" className={getLinkStyle('/home/employees/list')}>
+              <Link
+                href="/home/employees/employeeslist"
+                className={getLinkStyle('/home/employees', true)}
+              >
                 <Users size={24} className="shrink-0" />
               </Link>
             ) : (
-              <details className="group/details collapse collapse-arrow overflow-hidden bg-transparent">
-                <summary className="flex items-center justify-between gap-4 px-4 py-4 rounded-2xl hover:bg-primary/10 text-slate-500 cursor-pointer list-none transition-all">
+              <details
+                className="group/details collapse collapse-arrow overflow-hidden bg-transparent"
+                // This keeps the dropdown open if we are on a sub-page
+                open={pathname.startsWith('/home/employees')}
+              >
+                <summary
+                  className={`${getLinkStyle('/home/employees', true)} cursor-pointer list-none justify-between`}
+                >
                   <div className="flex items-center gap-4">
                     <Users size={24} className="shrink-0" />
                     <span className="text-sm font-black uppercase tracking-widest">Employees</span>
                   </div>
-                  {/* Rotating Downward Arrow */}
                   <ChevronDown
                     size={18}
                     className="transition-transform duration-300 group-open/details:rotate-180"
                   />
                 </summary>
-                <div className="bg-primary/40 text-white rounded-xl mt-1 mx-2">
+
+                <div className="bg-primary/10 rounded-xl mt-1 mx-2 border border-primary/5">
                   <ul className="py-2">
                     <li>
                       <Link
-                        href="/home/employees"
-                        className="block py-3 pl-12 text-[11px] font-bold hover:text-primary uppercase"
+                        href="/home/employees/employeeslist"
+                        className={`block py-3 pl-12 text-[11px] font-bold uppercase transition-colors ${
+                          pathname === '/home/employees/employeeslist'
+                            ? 'text-primary'
+                            : 'text-slate-400 hover:text-primary'
+                        }`}
                       >
                         Staff List
                       </Link>
                     </li>
                     <li>
                       <Link
-                        href="/home/aaemployee"
-                        className="block py-3 pl-12 text-[11px] font-bold hover:text-primary uppercase"
+                        href="/home/employees/addemployee"
+                        className={`block py-3 pl-12 text-[11px] font-bold uppercase transition-colors ${
+                          pathname === '/home/employees/addemployee'
+                            ? 'text-primary'
+                            : 'text-slate-400 hover:text-primary'
+                        }`}
                       >
                         Onboarding
                       </Link>
@@ -125,7 +145,7 @@ const Sidebar = () => {
           </li>
 
           <li>
-            <Link href="/home/timeline" className={getLinkStyle('/home/timeline')}>
+            <Link href="/home/maptimelines" className={getLinkStyle('/home/maptimelines')}>
               <History size={24} className="shrink-0" />
               {!isCollapsed && (
                 <span className="text-sm font-black uppercase tracking-widest">Timeline</span>

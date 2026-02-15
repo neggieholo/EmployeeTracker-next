@@ -18,7 +18,7 @@ const TimelineMapControls = ({
   const [endDate, setEndDate] = useState('');
 
   return (
-    <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+    <div className="flex flex-wrap items-center gap-4 bg-base-200 p-4 rounded-2xl border border-slate-100 shadow-sm">
       {/* Date Filter Group */}
       <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
         <div className="flex items-center gap-2 px-2 text-slate-500">
@@ -53,7 +53,7 @@ const TimelineMapControls = ({
       </div>
 
       {/* Search Group */}
-      <div className="relative flex-1 min-w-[200px]">
+      <div className="relative flex-1 min-w-50">
         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
           <Search size={18} />
         </div>

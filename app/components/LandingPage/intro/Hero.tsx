@@ -13,7 +13,7 @@ export default function Hero() {
 
   return (
     <div
-      className="hero min-h-[90vh] pt-[80px] relative overflow-hidden"
+      className="hero min-h-[90vh] pt-20 relative overflow-hidden"
       style={{
         backgroundImage: "url('/hero_background.png')",
         backgroundSize: 'cover',
@@ -25,7 +25,7 @@ export default function Hero() {
 
       <div className="hero-content flex-col lg:flex-row-reverse gap-12 lg:gap-24 px-8 z-10">
         {/* RIGHT SIDE: Semi-Transparent Slate Card (Not pure black) */}
-        <div className="card shrink-0 w-full max-w-xl shadow-2xl bg-slate-900/40 backdrop-blur-md border border-white/20">
+        <div className="card shrink-0 w-full max-w-xl shadow-2xl bg-accent-content/50 backdrop-blur-md border border-white/20">
           <div className="card-body p-10 md:p-14">
             <h2 className="card-title text-3xl font-black mb-8 text-white">
               With <span className="text-primary italic text-shadow-glow">Employee Tracker</span>

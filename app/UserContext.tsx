@@ -51,7 +51,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const storedUser = await localforage.getItem<AdminUser>('userData');
         if (storedUser) {
           setUser(storedUser);
-          console.log('Persistence: User reloaded from localforage');
+          // console.log('Persistence: User reloaded from localforage');
         }
       } catch (err) {
         console.error('Failed to load user from storage:', err);
@@ -71,7 +71,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           console.warn('Session invalid, redirecting...');
           window.location.replace('/');
         } else {
-          console.log('Session verified for:', res.user?.firstName);
+          // console.log('Session verified for:', res.user?.firstName);
         }
       } catch (err) {
         console.error('Session check failed:', err);
@@ -83,7 +83,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   }, []); // Note: Fixed the bracket syntax here as well
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3060', {
+    const newSocket = io('http://89.116.34.203:3060', {
       path: '/api/socket.io',
       withCredentials: true,
       autoConnect: true,
@@ -100,13 +100,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     // });
 
     newSocket.on('notification_deleted', (id: string) => {
-      console.log('notification deleted');
       setNotifications((prev) => prev.filter((n) => n._id !== id));
     });
 
     newSocket.on('user_location', (data) => {
-      console.log('📍 Received location:', data);
-      console.log(`📍 Received location for ${data.user}`);
+      // console.log('📍 Received location:', data);
+      // console.log(`📍 Received location for ${data.user}`);
 
       setWorkerLocations((prev) => {
         let lat = parseFloat(data.location.latitude);
@@ -172,7 +171,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const performFetch = async () => {
-      console.log('🔄 Background Polling: Fetching Clock Events...');
+      // console.log('🔄 Background Polling: Fetching Clock Events...');
       const data = await fetchTodayClock();
       setClockEvents({
         in: data.clockedInEvents,
@@ -187,7 +186,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const interval = setInterval(performFetch, 5000);
 
     return () => {
-      console.log('🛑 Stopping Background Polling');
+      // console.log('🛑 Stopping Background Polling');
       clearInterval(interval);
     };
   }, []);

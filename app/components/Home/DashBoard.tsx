@@ -68,7 +68,7 @@ const DashboardPage = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             {/* <div className="w-2 h-8 bg-primary rounded-full"></div> */}
-            <h2 className="text-2xl font-black italic text-slate-800 tracking-tight pl-5">
+            <h2 className="text-2xl font-black italic text-slate-800 tracking-tight pl-5 uppercase">
               Today&apos;s <span className="text-primary">Overview</span>
             </h2>
           </div>

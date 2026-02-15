@@ -11,7 +11,7 @@ import {
 } from '../Types/EmployeeTypes';
 import { toast } from 'react-toastify';
 
-const BASE_URL = 'http://localhost:3060/api';
+const BASE_URL = 'http://89.116.34.203:3066/api';
 
 interface ClockData {
   clockedInEvents: EmployeeClockEvent[];
@@ -153,7 +153,6 @@ export async function fetchRecentEvents(): Promise<EmployeeClockEvent[]> {
     // 2. Cast the JSON response to our interface
     const data: ClockEventsApiResponse = await response.json();
 
-    console.log('📜 Clock Events Response:', data);
 
     if (!data.success || !Array.isArray(data.clockEvents)) {
       console.error('❌ Invalid response format:', data);
@@ -178,7 +177,6 @@ export async function fetchRecentEvents(): Promise<EmployeeClockEvent[]> {
       // 5. Sort newest first
       .sort((a, b) => new Date(b.clockInTime).getTime() - new Date(a.clockInTime).getTime());
 
-    console.log('Processed Events:', events);
     return events;
   } catch (error) {
     console.error('❌ Error fetching clock events:', error);
@@ -528,25 +526,41 @@ export interface TimelineEntry {
   displayName: string;
   latitude: number;
   longitude: number;
+  address?: string; // Added address
   timestamp: string;
 }
 
-// A helper type for the UI: An object where keys are names and values are arrays of points
-export type GroupedTimelines = Record<string, { lat: number; lon: number; label: string }[]>;
+// Update this to include the address field
+export type GroupedTimelines = Record<
+  string,
+  {
+    lat: number;
+    lon: number;
+    label: string;
+    address: string;
+  }[]
+>;
 
-// Reusable Grouper Function
 const groupTimelineData = (results: TimelineEntry[]): GroupedTimelines => {
   const grouped: GroupedTimelines = {};
 
-  results.forEach(({ displayName, latitude, longitude, timestamp }) => {
-    // 1. If 'John' doesn't have a bucket yet, create one
-    if (!grouped[displayName]) grouped[displayName] = [];
-    
-    // 2. Add this specific point to 'John's' bucket only
-    grouped[displayName].push({
+  // 1. Sort results by timestamp (Oldest to Newest)
+  const sortedResults = [...results].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  sortedResults.forEach(({ displayName, latitude, longitude, timestamp, address }) => {
+    // Create a unique key for User + Date (e.g., "Simon manager - 2026-02-14")
+    const dateKey = new Date(timestamp).toLocaleDateString();
+    const groupKey = `${displayName} (${dateKey})`;
+
+    if (!grouped[groupKey]) grouped[groupKey] = [];
+
+    grouped[groupKey].push({
       lat: latitude,
       lon: longitude,
       label: timestamp,
+      address: address || 'No address recorded',
     });
   });
 
@@ -555,10 +569,14 @@ const groupTimelineData = (results: TimelineEntry[]): GroupedTimelines => {
 
 export const fetchTodaysTimelines = async (): Promise<GroupedTimelines | null> => {
   try {
-    const response = await fetch(`${BASE_URL}/records/todays-timelines`);
+    const response = await fetch(`${BASE_URL}/records/todays-timelines`, {
+      method: 'GET',
+      credentials: 'include', // 👈 Required to send session cookies
+    });
     const data = await response.json();
     return data.success ? groupTimelineData(data.timelineResults) : null;
   } catch (error) {
+    console.error("❌ Error fetching today's timelines:", error);
     return null;
   }
 };
@@ -579,6 +597,7 @@ export const fetchFilteredMaps = async (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
+      credentials: 'include', // 👈 Required to send session cookies
     });
 
     const data = await response.json();
@@ -589,5 +608,47 @@ export const fetchFilteredMaps = async (
   } catch (error) {
     console.error('❌ Error fetching filtered map events:', error);
     return null;
+  }
+};
+
+// apis.ts updates
+
+export interface Manager {
+  _id: string;
+  name: string;
+  department: string;
+}
+
+export interface ManagerResponse {
+  success: boolean;
+  managers?: Manager[];
+  message?: string;
+  error?: string;
+}
+
+export const fetchManagers = async (): Promise<ManagerResponse | null> => {
+  try {
+    const response = await fetch(`${BASE_URL}/manager/get-managers`, {
+      method: "GET",
+      credentials: "include",
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("❌ Error fetching managers:", error);
+    return null;
+  }
+};
+
+export const registerEmployee = async (data: any): Promise<any> => {
+  try {
+    const response = await fetch(`${BASE_URL}/manager/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      credentials: 'include'
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, error: "Connection failed" };
   }
 };

@@ -12,6 +12,7 @@
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "leaflet": "^1.9.4",
+    "leaflet-image": "^0.4.0",
     "libphonenumber-js": "^1.12.36",
     "localforage": "^1.10.0",
     "lucide-react": "^0.563.0",
