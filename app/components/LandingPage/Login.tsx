@@ -94,7 +94,7 @@ export default function LoginPage() {
             disabled={isloading}
             className="btn btn-primary btn-block shadow-lg shadow-primary/20 mt-4"
           >
-            {isloading ? <span className="loading loading-spinner"></span> : 'Sign In'}
+            {isloading ? <span className="loading loading-spinner bg-primary"></span> : 'Sign In'}
           </button>
         </form>
 

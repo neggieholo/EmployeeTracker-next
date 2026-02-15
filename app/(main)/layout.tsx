@@ -1,31 +1,29 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
 import '../globals.css';
 import Navbar from '../components/LandingPage/Navbar';
+import { headers } from 'next/headers';
+import { isMobile } from '../components/ismobile';
+import MobileNavbar from '../components/LandingPage/MobileNavbar';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   title: 'Employee Tracker - SnameTech',
   description: 'Field Force Management System',
 };
 
-export default function MainLayout({
+export default async function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const headersList = await headers();
+  const userAgent = headersList.get('user-agent') || '';
+  const mobileCheck = isMobile(userAgent);
+
   return (
     <>
-      <Navbar />
+      {mobileCheck ? <MobileNavbar /> : <Navbar />}
       {children}
       <footer className="footer p-10 bg-slate-800 text-neutral-content flex flex-col md:flex-row justify-between items-center gap-6">
         {/* LEFT SIDE: Branding */}

@@ -1,11 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
 import { toast } from 'react-toastify';
 import { forgotPasswordAdmin } from '@/app/Services/apis';
-import { ChevronLeft, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -41,7 +40,6 @@ export default function ForgotPasswordPage() {
   return (
     <div className="card shrink-0 w-full max-w-md shadow-2xl bg-slate-900/40 backdrop-blur-md border border-white/20 animate-in fade-in zoom-in duration-500">
       <div className="card-body p-10 md:p-12">
-
         <div className="text-center mb-8">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 border border-primary/20">
             <Mail className="text-primary" size={28} />
@@ -75,7 +73,7 @@ export default function ForgotPasswordPage() {
             className="btn btn-primary btn-block shadow-lg shadow-primary/20 h-14 rounded-xl"
           >
             {isloading ? (
-              <span className="loading loading-spinner"></span>
+              <span className="loading loading-spinner bg-primary"></span>
             ) : (
               <span className={labelStyle}>Send Reset Link</span>
             )}

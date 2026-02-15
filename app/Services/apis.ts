@@ -11,7 +11,7 @@ import {
 } from '../Types/EmployeeTypes';
 import { toast } from 'react-toastify';
 
-const BASE_URL = 'http://89.116.34.203:3066/api';
+const BASE_URL = 'http://localhost:3066/api';
 
 interface ClockData {
   clockedInEvents: EmployeeClockEvent[];

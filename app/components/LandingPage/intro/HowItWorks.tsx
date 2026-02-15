@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 const PlatformShowcase = () => {
   return (
@@ -29,9 +30,9 @@ const PlatformShowcase = () => {
                 <div className="w-20 h-1 bg-primary mb-6"></div>
                 <h2 className="text-4xl font-black mb-6 text-slate-800">Command Center</h2>
                 <p className="text-lg opacity-70 mb-8">
-                  The Admin Portal gives managers a &quot;God-eye view&quot; of the entire workforce. Track
-                  movement in real-time, monitor entry/exit alerts, and generate historical reports
-                  with a single click.
+                  The Admin Portal gives managers a &quot;God-eye view&quot; of the entire
+                  workforce. Track movement in real-time, monitor entry/exit alerts, and generate
+                  historical reports with a single click.
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-base-100 p-4 rounded-xl shadow-sm">
@@ -44,9 +45,16 @@ const PlatformShowcase = () => {
                   </div>
                 </div>
               </div>
-              <div className="md:w-1/2 bg-slate-900 rounded-2xl p-4 shadow-2xl border border-white/5">
+              <div className="md:w-1/2 bg-slate-900 rounded-2xl p-1 shadow-2xl border border-white/5">
                 {/* Image of a dashboard with pins and maps */}
-                <div className="aspect-video bg-slate-800 rounded-lg flex items-center justify-center italic text-white/20"></div>
+                <div className="relative aspect-video bg-slate-800 rounded-lg flex items-center justify-center">
+                  <Image
+                    src="/EmptackerAdmin_dashboard.png"
+                    alt="Dashboard example"
+                    fill
+                    className="object-cover rounded-lg"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -68,8 +76,9 @@ const PlatformShowcase = () => {
                 <div className="w-20 h-1 bg-primary mb-6"></div>
                 <h2 className="text-4xl font-black mb-6">Seamless Field Integration</h2>
                 <p className="text-lg opacity-70 mb-8">
-                  We&apos;ve simplified the complex world of GPS telemetry. Your employees don&apos;t need to
-                  be tech-savvy; they just need to press one button to sync with the central server.
+                  We&apos;ve simplified the complex world of GPS telemetry. Your employees
+                  don&apos;t need to be tech-savvy; they just need to press one button to sync with
+                  the central server.
                 </p>
                 <div className="flex gap-4">
                   <a href="/how-it-works" className="btn btn-primary px-8">

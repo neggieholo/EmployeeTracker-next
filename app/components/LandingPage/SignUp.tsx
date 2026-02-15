@@ -214,7 +214,7 @@ const SignUp: React.FC = () => {
             className="btn btn-primary btn-block shadow-lg shadow-primary/20 mt-6"
             disabled={isloading}
           >
-            {isloading ? <span className="loading loading-spinner"></span> : 'Continue to Payment'}
+            {isloading ? <span className="loading loading-spinner bg-primary"></span> : 'Continue to Payment'}
           </button>
         </form>
 

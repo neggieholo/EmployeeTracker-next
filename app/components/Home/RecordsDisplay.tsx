@@ -229,7 +229,7 @@ export function RecordsDisplay({ eventList, isLoading, message }: RecordsDisplay
                     <td colSpan={5} className="py-24 text-center">
                       <Search size={56} className="mx-auto text-slate-100 mb-4" />
                       <p className="font-black text-slate-300 uppercase tracking-widest text-sm">
-                        No matching signals found
+                        No matching records found
                       </p>
                     </td>
                   </tr>

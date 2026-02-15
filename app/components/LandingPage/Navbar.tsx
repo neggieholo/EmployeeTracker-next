@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const Navbar = () => {
   const router = useRouter();
@@ -11,7 +12,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar bg-primary text-white backdrop-blur-md fixed top-0 w-full z-100 border-b border-base-200 px-4 md:px-12 h-[80px]">
+    <nav className="navbar bg-primary text-white backdrop-blur-md fixed top-0 w-full z-100 border-b border-base-200 px-4 md:px-12 h-20">
       {/* LEFT SIDE: Brand & Logo */}
       <div className="navbar-start">
         {/* Mobile Dropdown for small screens */}
@@ -67,6 +68,9 @@ const Navbar = () => {
       {/* CENTER SIDE: Desktop Menu */}
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1 gap-2 font-semibold">
+          <li>
+            <Link href="/" className="transition-colors">Home</Link>
+          </li>
           <li>
             <a className="transition-colors">Product</a>
           </li>

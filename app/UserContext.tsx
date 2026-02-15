@@ -61,29 +61,29 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     loadUser();
   }, []);
 
+  // useEffect(() => {
+  //   async function cSessionCheck() {
+  //     try {
+  //       const res = await checkSession();
+
+  //       // Changed res.ok to res.success
+  //       if (!res.success) {
+  //         console.warn('Session invalid, redirecting...');
+  //         window.location.replace('/');
+  //       } else {
+  //         // console.log('Session verified for:', res.user?.firstName);
+  //       }
+  //     } catch (err) {
+  //       console.error('Session check failed:', err);
+  //       window.location.replace('/');
+  //     }
+  //   }
+
+  //   cSessionCheck();
+  // }, []); 
+
   useEffect(() => {
-    async function cSessionCheck() {
-      try {
-        const res = await checkSession();
-
-        // Changed res.ok to res.success
-        if (!res.success) {
-          console.warn('Session invalid, redirecting...');
-          window.location.replace('/');
-        } else {
-          // console.log('Session verified for:', res.user?.firstName);
-        }
-      } catch (err) {
-        console.error('Session check failed:', err);
-        window.location.replace('/');
-      }
-    }
-
-    cSessionCheck();
-  }, []); // Note: Fixed the bracket syntax here as well
-
-  useEffect(() => {
-    const newSocket = io('http://89.116.34.203:3060', {
+    const newSocket = io('http://localhost:3066', {
       path: '/api/socket.io',
       withCredentials: true,
       autoConnect: true,
@@ -92,12 +92,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
     newSocket.on('connect', () => setIsConnected(true));
     newSocket.on('onlineCheck', (users) => setOnlineMembers(users));
-    // newSocket.on('user_location', (data) => {
-    //   setWorkerLocations((prev) => ({
-    //     ...prev,
-    //     [data.user]: { ...data.location },
-    //   }));
-    // });
+    
 
     newSocket.on('notification_deleted', (id: string) => {
       setNotifications((prev) => prev.filter((n) => n._id !== id));

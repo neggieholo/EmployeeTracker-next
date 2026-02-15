@@ -7,7 +7,7 @@ export default function NotificationsPage() {
   const { notifications, deleteNotification, deleteAll } = useUser();
 
   return (
-    <div className="w-full mx-auto bg-white p-2 relative h-[calc(100vh-100px)] flex flex-col">
+    <div className="w-full mx-auto bg-white p-2 relative h-[calc(100vh-100px)] flex flex-col z-0">
       {/* Header Card */}
       <div className="sticky mt-4 w-full top-0 left-0 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-primary/50 p-6 rounded-2xl shadow-sm z-50">
         <div>

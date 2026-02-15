@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -111,7 +112,7 @@ export default function ResetPasswordPage() {
             className="btn btn-primary btn-block shadow-lg shadow-primary/20 h-14 rounded-xl mt-4"
           >
             {isloading ? (
-              <span className="loading loading-spinner"></span>
+              <span className="loading loading-spinner bg-primary"></span>
             ) : (
               <span className={labelStyle}>Update Password</span>
             )}
@@ -121,3 +122,4 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
+
